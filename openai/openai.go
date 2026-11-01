@@ -507,7 +507,7 @@ func ToCompleteChunk(id string, r api.GenerateResponse) CompletionChunk {
 
 // ToListCompletion converts an api.ListResponse to ListCompletion
 func ToListCompletion(r api.ListResponse) ListCompletion {
-	var data []Model
+	data := make([]Model, 0, len(r.Models))
 	for _, m := range r.Models {
 		id := m.Model
 		if id == "" {
@@ -531,35 +531,31 @@ func ToListCompletion(r api.ListResponse) ListCompletion {
 // ToEmbeddingList converts an api.EmbedResponse to EmbeddingList
 // encodingFormat can be "float", "base64", or empty (defaults to "float")
 func ToEmbeddingList(model string, r api.EmbedResponse, encodingFormat string) EmbeddingList {
-	if r.Embeddings != nil {
-		var data []Embedding
-		for i, e := range r.Embeddings {
-			var embedding any
-			if strings.EqualFold(encodingFormat, "base64") {
-				embedding = floatsToBase64(e)
-			} else {
-				embedding = e
-			}
-
-			data = append(data, Embedding{
-				Object:    "embedding",
-				Embedding: embedding,
-				Index:     i,
-			})
+	data := make([]Embedding, 0, len(r.Embeddings))
+	for i, e := range r.Embeddings {
+		var embedding any
+		if strings.EqualFold(encodingFormat, "base64") {
+			embedding = floatsToBase64(e)
+		} else {
+			embedding = e
 		}
 
-		return EmbeddingList{
-			Object: "list",
-			Data:   data,
-			Model:  model,
-			Usage: EmbeddingUsage{
-				PromptTokens: r.PromptEvalCount,
-				TotalTokens:  r.PromptEvalCount,
-			},
-		}
+		data = append(data, Embedding{
+			Object:    "embedding",
+			Embedding: embedding,
+			Index:     i,
+		})
 	}
 
-	return EmbeddingList{}
+	return EmbeddingList{
+		Object: "list",
+		Data:   data,
+		Model:  model,
+		Usage: EmbeddingUsage{
+			PromptTokens: r.PromptEvalCount,
+			TotalTokens:  r.PromptEvalCount,
+		},
+	}
 }
 
 // floatsToBase64 encodes a []float32 to a base64 string
